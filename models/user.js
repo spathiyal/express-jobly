@@ -10,6 +10,7 @@ const {
 } = require("../expressError");
 
 const { BCRYPT_WORK_FACTOR } = require("../config.js");
+const job = require("./job");
 
 /** Related functions for users. */
 
@@ -173,9 +174,9 @@ class User {
         });
     const usernameVarIdx = "$" + (values.length + 1);
 
-    const querySql = `UPDATE users 
-                      SET ${setCols} 
-                      WHERE username = ${usernameVarIdx} 
+    const querySql = `UPDATE users
+                      SET ${setCols}
+                      WHERE username = ${usernameVarIdx}
                       RETURNING username,
                                 first_name AS "firstName",
                                 last_name AS "lastName",
@@ -206,5 +207,20 @@ class User {
   }
 }
 
+// step 5 : Apply for a job
+static async applyForJob(username,id){
+  // check if the job exists
+  const jobCheck = await db.query(`select id from jobs where id = $1`,[id]);
+  const job = jobCheck.rows[0];
+  if (!job) {throw new NotFoundError(`No job: ${id}`);}
 
+   // check if the username exists
+   const userCheck = await db.query(`select username from users where username = $1`,[username]);
+   const user = userCheck.rows[0];
+   if (!user) {throw new NotFoundError(`No username: ${username}`);}
+   await db.query(
+    `INSERT INTO applications (id, username)
+     VALUES ($1, $2)`,
+  [id, username]);
+}
 module.exports = User;
